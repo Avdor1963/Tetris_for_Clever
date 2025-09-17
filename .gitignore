@@ -2,7 +2,7 @@
 *.rsf
 # библиотечные файлы - отслеживаются в своих репозиториях
 *.bpm
-# LCDRu.bpm - в репозитории - 
-# Save.bpm - в рнпозитории - 
+# LCDRu.bpm - в репозитории - https://github.com/Avdor1963/EV3_Basic_Pro_Russian
+# Save.bpm - в рнпозитории - https://github.com/Avdor1963/EV3_Basic_Pro_Save_Tabl
 # включаемые модули. Здесь используется для хранения текущей таблицы рекордов.
 *.bpi

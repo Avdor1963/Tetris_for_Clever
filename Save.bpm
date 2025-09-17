@@ -2,6 +2,7 @@ import "LCDRu"
 
 string[] TableRec     ' массив строк для таблицы рекордов
 string NameFile       ' Имя файла с таблицей рекордов
+string NameTableRec   ' имя таблицы отображается в верхней строке экрана просмотра/выбора таблицы
 number FTableRec      ' дескриптор файла (расширение .bpi - позволяет посмотреть содержимое файл в Clever)
 
 number MaxLen         ' Максимальная длина таблицы (количество строк 99)
@@ -26,8 +27,9 @@ number yy             ' год
 ' считываем текущую таблицу рекордов из флешпамяти EV3 (фактически инициализация таблицы)
 ' Таблица всегда имеет максимальное число строк (99)
 ' Но число реальных игроков задется в первой строке файла 
-Function ReadTableRec(in string FileName)
+Function ReadTableRec(in string FileName, in string TableName)
   NameFile  = FileName
+  NameTableRec = TableName
   FTableRec = EV3File.OpenRead(NameFile+".bpi")   ' Открываем таблицу рекордов 
   MaxLen    = 99        ' максимальная длина таблицы рекордов [константа] 99?
   MaxRecOne = 5         ' максимальное число рекордов от одного игрока [константа]
@@ -165,11 +167,11 @@ EndFunction
 ' распечатываем текущий заголовок таблицы рекордов
 Function PrintTableHead()
   LCDRu.StopUpdate()
-  LCDRu.Clear()                                         ' Все таки нужно очистить экран
-  LCDRu.TextRu(1, 0, 10, 1, "   NF<KBWF HTRJHLJD   ")   ' заголовок таблицы
-  LCDRu.Rect(1, 0, 5, 176, 18)                          ' двойная рамка вокруг заголовка
-  LCDRu.Rect(1, 3, 7, 170, 14)   
-  LCDRu.Update()
+  LCDRu.Clear()                           ' Все таки нужно очистить экран
+  LCDRu.TextRu(1, 0, 10, 1, NameTableRec) ' заголовок таблицы
+  LCDRu.Rect(1, 0, 5, 176, 18)            ' двойная рамка вокруг заголовка
+  LCDRu.Rect(1, 3, 7, 170, 14)            '
+  LCDRu.Update()                          '
 EndFunction
 
 ' --------------------------------------------------

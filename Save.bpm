@@ -1,27 +1,13 @@
 import "LCDRu"
 
-string[] TableRec     ' массив строк для таблицы рекордов
-string NameFile       ' Имя файла с таблицей рекордов
-string NameTableRec   ' имя таблицы отображается в верхней строке экрана просмотра/выбора таблицы
-number FTableRec      ' дескриптор файла (расширение .bpi - позволяет посмотреть содержимое файл в Clever)
-
-number MaxLen         ' Максимальная длина таблицы (количество строк 99)
-number TekLen         ' Текущая длина таблицы (количество строк занятых реальными игроками)
-number MaxRecOne      ' Максимальное число рекордов для одного игрока (пока попробуем 5))
-
 number TekNum         ' номер строки таблицы для текущего игрока (обводим двойной рамкой)
 string TekName        ' Имя текущего игрока,
 number TekCount       ' его рекорд,
 number TekUroven      ' уровень его рекорда
-string TekParol       ' и его пароль, по которому можно выбрать игрока из таблицы, а также поменять (отредактировать) своё имя и пароль в таблице рекордов
 
-number TekStr         ' текущая строка таблицы рекордов. Выделяется одиночной рамкой. Можно выбрать стрелками вверх "U" и вниз "D"
-number TekStart       ' текущая строка таблицы рекордов, отображаемая в верхней строке очередной страницы таблицы из 4 строк
+number TekLen         ' Текущая длина таблицы (количество строк занятых реальными игроками)
 
-string TekDate        ' для ввода даты
-number dd             ' и ее распаковки день
-number mm             ' месяц
-number yy             ' год
+string TekDate        ' Текущая дата
 
 ' --------------------------------------------------
 ' считываем текущую таблицу рекордов из флешпамяти EV3 (фактически инициализация таблицы)
@@ -56,227 +42,6 @@ Function ReadTableRec(in string FileName, in string TableName)
   EndIf
   EV3File.Close(FTableRec)
   TekNum = 0                           ' пока текущий игрок не выбран
-EndFunction
-
-' --------------------------------------------------
-' записываем текущую таблицу рекордов во флешпамять EV3
-Function SaveTableRec()
-  FTableRec = EV3File.OpenWrite(NameFile+".bpi")
-  EV3File.WriteLine(FTableRec, TekLen)
-  MaxLen = 99
-  For I = 1 To MaxLen
-    EV3File.WriteLine(FTableRec, TableRec[2*I-1])
-    EV3File.WriteLine(FTableRec, TableRec[2*I])
-  EndFor
-  EV3File.Close(FTableRec)
-EndFunction
-
-' --------------------------------------------------
-' Запросить ввод пароля игроком и проверить совпадение с паролем из строки, по номеру заданному в numIn
-' Выводим флаговую переменную isParolTrue (1 - пароль верный, 0 - пароли не совпали) 
-Function TestParol(in number numIn, out number isParolTrue) 
-  LCDRu.Klav("/0Ddtlbnt gfhjkm/a:", Parol)       ' просим игрока ввести пароль (с подсказкой "Введите пароль:")
-  GetParol(NumIn, TabParol)                      ' считываем из таблицы скрытый пароль игрока.
-  'LCDRu.TextRu(1, 0, 30, 2, "!" + TekNum + "!" + Parol + "=" + TekParol + "!")
-  'Buttons.Wait()
-  'Buttons.Flush()
-If TabParol = Parol Then
-    isParolTrue = 1                              ' пароль верный (таблицу не перерисовываем)
-  Else
-    isParolTrue = 0                              ' пароль неправильный
-    LCD.Clear()                                  ' Сообщаем об этом
-    '                       123  4  5678901   
-    LCDRu.TextRu(1, 0, 20, 2, "EDS/a,/r GFHJKM") ' УВЫ, ПАРОЛЬ
-    LCDRu.TextRu(1, 0, 50, 2, " YTDTHYSQ ")      ' НЕВЕРНЫЙ
-    Program.Delay(1500)                          ' задержка, достаточная чтобы прочитать сообщение
-    PrintTableHead()                             ' перерисовываем заголовок таблицы
-    PrintTable(NumIn, 1)                         ' и перерисовываем таблицу рекордов
-    'Buttons.Flush()                             ' Сбрасываем нажатые кнопки
-  EndIf
-  ' для отладки
-  'LCDRu.TextRu(1, 0, 10, 1, TekParol)
-  'LCDRu.TextRu(1, 0, 30, 1, Parol)
-  'LCDRu.TextRu(1, 0, 50, 1, "" + isParolTrue)
-  'Buttons.Wait()
-  'Buttons.Flush()
-EndFunction
-
-' --------------------------------------------------
-' Получить в NameOut имя игрока из строки таблицы рекордов, по номеру заданному в numIn
-Function GetName(in number numIn, out string NameOut)
-  NameOut = TableRec[2*NumIn-1]  
-EndFunction
-
-' --------------------------------------------------
-' Записать в строку таблицы рекордов по номеру строки, заданной в numIn новое имя игрока NameIn)
-Function SetName(in number numIn, in string NameIn)
-    TableRec[2*numIn-1] = NameIn
-EndFunction
-  
-' --------------------------------------------------
-' Получить в ParolOut пароль игрока из строки таблицы рекордов, по номеру заданному в numIn
-Function GetParol(in number numIn, out string ParolOut) 
-  ParolOut = Text.GetSubTextToEnd(TableRec[2*NumIn], 23)
-  'LCDRu.TextRu(1, 0, 10, 2, numIn + "!" + TekNum + "!" + ParolOut + "=" + TekParol + "!")
-  'Buttons.Wait()
-  'Buttons.Flush()
-EndFunction
-
-' --------------------------------------------------
-' Записать в строку таблицы рекордов по номеру строки, заданной в numIn новый пароль игрока ParolIn)
-Function SetParol(in number numIn, in string parolIn)
-  TableRec[2*NumIn] = Text.GetSubText(TableRec[2*NumIn], 1, 22) + ParolIn
-EndFunction
-  
-' --------------------------------------------------
-' Получить в CountOut счет игрока из строки таблицы рекордов, по номеру заданному в numIn
-Function GetCount(in number numIn, out number CountOut)
-  CountOut = EV3File.ConvertToNumber(Text.GetSubText(TableRec[2*NumIn], 12, 7))
-EndFunction
-
-' --------------------------------------------------
-' Получить в UrovenOut уровень игрока из строки таблицы рекордов, по номеру заданному в numIn
-Function GetUroven(in number numIn, out number UrovenOut)
-  UrovenOut = EV3File.ConvertToNumber(Text.GetSubText(TableRec[2*NumIn], 20, 2))
-EndFunction
-
-' --------------------------------------------------
-' Записать в строку таблицы рекордов по номеру строки, новую строку с данными текущего игрока
-' TekName, TekCount, TekUroven, TekParol
-Function SetNewStr()
-  SetName(TekNum, TekName)               ' Записываем имя игрока
-  NumToStrRight(TekCount, 7, strCount)   ' выравниваем счет вправо
-  NumToStrRight(TekUroven, 2, strUroven) ' выравниваем уровень вправо
-  TableRec[2*TekNum] = TekDate + " - " + strCount + ":" + strUroven + "L" + TekParol
-EndFunction
-
-' --------------------------------------------------
-' Перевод числа в строку с выровниванием вправо в заданное число позиций. 
-' Заданное число numberIn, число позиций posIn, вывод в строку strOut)
-Function NumToStrRight(in number numberIn, in number posIn, out string strOut)
-  Tnumber  = "" + numberIn               ' перевод в строковый вид
-  LenNum = Text.GetLength(Tnumber)       ' вычисляем число позиций числа
-  strOut = ""                            '
-  For I = 1 To posIn - LenNum            ' добавляем подводящие пробелы, чтобы отформатировать счет вправо
-    strOut = strOut + " "                '
-  EndFor
-  strOut = strOut + numberIn             ' формируем выравненное вправо число
-EndFunction
-
-' --------------------------------------------------
-' распечатываем текущий заголовок таблицы рекордов
-Function PrintTableHead()
-  LCDRu.StopUpdate()
-  LCDRu.Clear()                           ' Все таки нужно очистить экран
-  LCDRu.TextRu(1, 0, 10, 1, NameTableRec) ' заголовок таблицы
-  LCDRu.Rect(1, 0, 5, 176, 18)            ' двойная рамка вокруг заголовка
-  LCDRu.Rect(1, 3, 7, 170, 14)            '
-  LCDRu.Update()                          '
-EndFunction
-
-' --------------------------------------------------
-' распечатываем текущую страницу таблицы рекордов
-' Число строк в отображаемой странице не должно быть больше 5. Скролинг таблицы осуществляется по значению текущей строки
-'  
-Function PrintTable(in number numIn, in number prizDraw)
-  LCDRu.StopUpdate()
-  GetIndexTek(numIn, priz)                                      ' Вычисляем номер строки в первой строке экрана
-  If priz = 1 Or prizDraw = 1 Then                              ' надо распечатывать строки (1) или надо просто переставить курсор (0)
-    For I = 1 To 5                                              ' Распечатываем строки таблицы
-      If I + TekStart < TekLen + 3 Then                         ' Строки таблицы с реальными рекордами - выводим
-        GetNum(I + TekStart - 1, numStr)                        ' номер строки в текстовый вид с ")"                   
-        LCD.Text(1, 24, I*20+4,  1, "                    ")     ' очищаем строку с предыдущим именем (оно может быть длинее выводимого)
-        LCDRu.TextRu(1, 0,  I*20+4,  1, numStr)                 ' выводим номер рекоррда = номер строки в таблице рекордов
-        LCDRu.TextRu(1, 24, I*20+4,  1, TableRec[2*(I+TekStart-1)-1])' затем выводим имя из строки таблицы
-        LCDRu.Text(1, 0,  I*20+14, 1, TableRec[2*(I+TekStart-1)])    ' затем дату, очки и уровень на следующей строке
-        If TekNum = I + TekStart - 1 Then                       ' текущая строка - это строка текущего игрока?       
-          LCD.FillRect(1, 17,  I*20+4,  4, 15)                  ' для текущего игрока ставим отметку - курсор высотой в две строки
-        EndIf  
-      Else  
-        LCD.Text(1, 0, I*20+4,  1, "                      ")    ' очищаем строку
-        LCD.Text(1, 0, I*20+14, 1, "                      ")    ' таблицы
-      EndIf                                                     '
-    EndFor                                                      '
-  EndIf                                                         '   
-  LCDRu.Update()                                                ' одновременный вывод сформированного буфера на экран
-  SetFrame(numIn)                                               ' Выводим рамку вокруг текущая выбранная строки
-  'LCDRu.TextRu(1, 0, 10, 1, numIn + "!" + num  + "!"  + TekNum + "!" + TekLen + "!" + TekParol)
-EndFunction
-
-' --------------------------------------------------
-' Вычисляем индекс (номер строки таблицы) выводимый в первой строке очередной порции таблицы рекордов из 5 строк
-' в скроллинге таблицы рекордов для отображения на экране EV3. Номер текущей строки задан в numIn
-' Устанавливаем признак скроллинга = 1, если надо переместить строки вверх или вниз. Иначе просто переставляем рамку
-' При скроллинге также изменяем глобальную переменную TekStart - номер строки отображаемой вверху первой на странице
-Function GetIndexTek(in number numIn, out number prizDraw)
-  If     numIn = TekStart - 1 Then        ' Если текущая строка при последовательном скроллинге вышла за верхную границу текущей страницы
-         TekStart = TekStart - 1          ' то уменьшаем номер верхней отображаемой строки (курсор останеться на верхней 1 строке)
-         prizDraw = 1                     ' то делаем скроллинг страницы вниз
-  ElseIf numIn >= TekStart And numIn < TekStart + 5 Then        ' текущая строка находится внутри страницы
-         prizDraw = 0                     ' перерисовки страницы (скроллинг_ )не делаем - просто переставляем рамку курсора
-  ElseIf numIn = TekStart + 5 Then        ' Если текущая строка при последовательном скроллинге вышла за нижную границу текущей страницы 
-         TekStart = TekStart + 1          ' Увеличили номер верхней отображаемой строки (курсор останеться на последней 5 строке)
-         prizDraw = 1                     ' то делаем скроллинг страницы вниз
-  Else                                    ' Первый вывод текущей страницы таблицы (то есть нет последовательного скроллинга)
-         prizDraw = 1                     ' Строки следует распечатать, так как это первая отображаемая страница
-         If numIn < 4 Then                ' Для первых 3 строк страницы   
-            TekStart = 1                  ' курсор ставим на текущей строке, а страницу отображаем с 1 строки
-         Else                             ' Для всех остальных строк 
-            TekStart = numIn - 2          ' Страницу начинает с такой строки, чтобы курсор, стоящий на текущей строке, был на 3 строке страницы (посредине) 
-         EndIf   
-  EndIf   
-EndFunction
-
-' --------------------------------------------------
-' Получить в numOut номер строки таблицы рекордов в виде "n) " или "nn)", по номеру заданному в numIn
-Function GetNum(in number numIn, out string numOut)
-  If numIn <= 9 Then
-    numOut = "" + numIn + ") "
-  Else
-    numOut = "" + numIn + ")"
-  EndIf
-EndFunction
-
-' --------------------------------------------------
-' Задать рамку вокруг текущей строки таблицы рекордов. Номер строки в numIn
-Function SetFrame(in number numIn)
-  GetPosTek(numIn, pos)  
-  If pos > 0 Then                           ' на всякий случай, вдруг как то текущая строка вышла за пределы страницы  
-    LCDRu.Rect(1, 0, pos*20+3, 175, 20)     ' Задаем одиночную рамку вокруг текущей строки таблицы рекордов
-    If TekNum = numIn Then
-      LCDRu.Rect(1, 1, pos*20+4, 174, 18)   ' Задаем двойную рамку вокруг строки текущего игрока таблицы рекордов
-    EndIf
-  EndIf  
-EndFunction
-
-' --------------------------------------------------
-' Убрать рамку вокруг текущей строки таблицы рекордов. Номер строки в numIn
-Function ClearFrame(in number numIn)
-  GetPosTek(numIn, pos)
-  If pos > 0 Then                                               ' на всякий случай, вдруг как то текущая строка вышла за пределы страницы  
-    LCDRu.Rect(0, 0, pos*20+3, 175, 20)                         ' Убираем одиночнцю рамку вокруг текущей строки таблицы рекордов
-    If TekNum = numIn Then                                      ' Для текущего игрока
-      LCDRu.Rect(0, 1, pos*20+4, 174, 18)                       ' Убираем двойную рамку вокруг строки текущего игрока таблицы рекордов
-      ' и перерисовываем строку текущего игрока, так как внутренняя рамка ее подпортила сверху и снизу
-      GetNum(numIn, numStr)                                     ' номер строки в текстовый вид с ")"                   
-      LCDRu.TextRu(1, 0,  pos*20+4,  1, numStr)                 ' перевыводим номер рекорда = номер строки в таблице рекордов
-      LCDRu.TextRu(1, 24, pos*20+4,  1, TableRec[2*(numIn)-1])  ' перевыводим имя из строки таблицы
-      LCD.Text(1, 0,  pos*20+14, 1, TableRec[2*numIn])          ' затем дату, очки и уровень на следующей строке
-      LCD.FillRect(1, 17,  pos*20+4,  4, 15)                      ' для текущего игрока ставим отметку - курсор высотой в две строки
-    EndIf
-  EndIf  
-EndFunction
-
-' --------------------------------------------------
-' Вычисляем позицию текущей строки в скроллинге таблицы рекордов на экране EV3. Номер текущей строки задан в numIn 
-' в начале таблицы для первых 5 строк - = numIn, далее 5 строка, пока меньше 95
-' в последнем участке (numIn > 94) - = numIn - 94   
-Function GetPosTek(in number numIn, out number posOut)
-  If numIn >= TekStart And numIn < TekStart + 5 Then       ' Текущая строка должна попадать в текущую отображаемую страницу
-    posOut = numIn - TekStart + 1                          ' Вычисляем номер строки курсора в текущей странице
-  Else                                                     ' вообще то так быть не должно (текущая строка всегда должна быть в текущей странице),
-    posOut = 0                                             ' но на всякий случай задаем признак - не рисовать рамку вокруг текушей строки
-  EndIf   
 EndFunction
 
 ' --------------------------------------------------
@@ -472,6 +237,252 @@ Function DrawLCDHelpTabl()
   LCD.Update()                                                ' Выводим сразу всю картинку
   Buttons.Wait()                                              ' по нажатию на любую кнопку
   Buttons.Flush()                                             ' выходим из показа экрана
+EndFunction
+
+' --------------------------------------------------
+' Перевод числа в строку с выровниванием вправо в заданное число позиций. 
+' Заданное число numberIn, число позиций posIn, вывод в строку strOut)
+Function NumToStrRight(in number numberIn, in number posIn, out string strOut)
+  Tnumber  = "" + numberIn               ' перевод в строковый вид
+  LenNum = Text.GetLength(Tnumber)       ' вычисляем число позиций числа
+  strOut = ""                            '
+  For I = 1 To posIn - LenNum            ' добавляем подводящие пробелы, чтобы отформатировать счет вправо
+    strOut = strOut + " "                '
+  EndFor
+  strOut = strOut + numberIn             ' формируем выравненное вправо число
+EndFunction
+
+' --------------------------------------------------
+private
+' --------------------------------------------------
+' задаем глобальные приватные переменные
+string[] TableRec     ' массив строк для таблицы рекордов
+
+string NameFile       ' Имя файла с таблицей рекордов
+string NameTableRec   ' имя таблицы отображается в верхней строке экрана просмотра/выбора таблицы
+number FTableRec      ' дескриптор файла (расширение .bpi - позволяет посмотреть содержимое файла в Clever)
+
+number MaxLen         ' Максимальная длина таблицы (количество строк 99)
+number MaxRecOne      ' Максимальное число рекордов для одного игрока (пока попробуем 5))
+
+string TekParol       ' Секретный пароль текущего игрока
+
+number TekStart       ' текущая строка таблицы рекордов, отображаемая в верхней строке очередной страницы таблицы из 4 строк
+number TekStr         ' текущая строка таблицы рекордов. Выделяется одиночной рамкой. Можно выбрать стрелками вверх "U" и вниз "D"
+
+' для упаковки/распаковки текущей даты
+number dd             ' день
+number mm             ' месяц
+number yy             ' год
+
+' --------------------------------------------------
+' задаем приватные методы, которые не будут доступны в вызываюшей модуль программе
+' --------------------------------------------------
+' записываем текущую таблицу рекордов во флешпамять EV3
+Function SaveTableRec()
+  FTableRec = EV3File.OpenWrite(NameFile+".bpi")
+  EV3File.WriteLine(FTableRec, TekLen)
+  MaxLen = 99
+  For I = 1 To MaxLen
+    EV3File.WriteLine(FTableRec, TableRec[2*I-1])
+    EV3File.WriteLine(FTableRec, TableRec[2*I])
+  EndFor
+  EV3File.Close(FTableRec)
+EndFunction
+
+' --------------------------------------------------
+' Запросить ввод пароля игроком и проверить совпадение с паролем из строки, по номеру заданному в numIn
+' Выводим флаговую переменную isParolTrue (1 - пароль верный, 0 - пароли не совпали) 
+Function TestParol(in number numIn, out number isParolTrue) 
+  LCDRu.Klav("/0Ddtlbnt gfhjkm/a:", Parol)       ' просим игрока ввести пароль (с подсказкой "Введите пароль:")
+  GetParol(NumIn, TabParol)                      ' считываем из таблицы скрытый пароль игрока.
+  'LCDRu.TextRu(1, 0, 30, 2, "!" + TekNum + "!" + Parol + "=" + TekParol + "!")
+  'Buttons.Wait()
+  'Buttons.Flush()
+If TabParol = Parol Then
+    isParolTrue = 1                              ' пароль верный (таблицу не перерисовываем)
+  Else
+    isParolTrue = 0                              ' пароль неправильный
+    LCD.Clear()                                  ' Сообщаем об этом
+    '                       123  4  5678901   
+    LCDRu.TextRu(1, 0, 20, 2, "EDS/a,/r GFHJKM") ' УВЫ, ПАРОЛЬ
+    LCDRu.TextRu(1, 0, 50, 2, " YTDTHYSQ ")      ' НЕВЕРНЫЙ
+    Program.Delay(1500)                          ' задержка, достаточная чтобы прочитать сообщение
+    PrintTableHead()                             ' перерисовываем заголовок таблицы
+    PrintTable(NumIn, 1)                         ' и перерисовываем таблицу рекордов
+    'Buttons.Flush()                             ' Сбрасываем нажатые кнопки
+  EndIf
+  ' для отладки
+  'LCDRu.TextRu(1, 0, 10, 1, TekParol)
+  'LCDRu.TextRu(1, 0, 30, 1, Parol)
+  'LCDRu.TextRu(1, 0, 50, 1, "" + isParolTrue)
+  'Buttons.Wait()
+  'Buttons.Flush()
+EndFunction
+
+' --------------------------------------------------
+' Получить в NameOut имя игрока из строки таблицы рекордов, по номеру заданному в numIn
+Function GetName(in number numIn, out string NameOut)
+  NameOut = TableRec[2*NumIn-1]  
+EndFunction
+
+' --------------------------------------------------
+' Записать в строку таблицы рекордов по номеру строки, заданной в numIn новое имя игрока NameIn)
+Function SetName(in number numIn, in string NameIn)
+    TableRec[2*numIn-1] = NameIn
+EndFunction
+  
+' --------------------------------------------------
+' Получить в ParolOut пароль игрока из строки таблицы рекордов, по номеру заданному в numIn
+Function GetParol(in number numIn, out string ParolOut) 
+  ParolOut = Text.GetSubTextToEnd(TableRec[2*NumIn], 23)
+  'LCDRu.TextRu(1, 0, 10, 2, numIn + "!" + TekNum + "!" + ParolOut + "=" + TekParol + "!")
+  'Buttons.Wait()
+  'Buttons.Flush()
+EndFunction
+
+' --------------------------------------------------
+' Записать в строку таблицы рекордов по номеру строки, заданной в numIn новый пароль игрока ParolIn)
+Function SetParol(in number numIn, in string parolIn)
+  TableRec[2*NumIn] = Text.GetSubText(TableRec[2*NumIn], 1, 22) + ParolIn
+EndFunction
+  
+' --------------------------------------------------
+' Получить в CountOut счет игрока из строки таблицы рекордов, по номеру заданному в numIn
+Function GetCount(in number numIn, out number CountOut)
+  CountOut = EV3File.ConvertToNumber(Text.GetSubText(TableRec[2*NumIn], 12, 7))
+EndFunction
+
+' --------------------------------------------------
+' Получить в UrovenOut уровень игрока из строки таблицы рекордов, по номеру заданному в numIn
+Function GetUroven(in number numIn, out number UrovenOut)
+  UrovenOut = EV3File.ConvertToNumber(Text.GetSubText(TableRec[2*NumIn], 20, 2))
+EndFunction
+
+' --------------------------------------------------
+' Записать в строку таблицы рекордов по номеру строки, новую строку с данными текущего игрока
+' TekName, TekCount, TekUroven, TekParol
+Function SetNewStr()
+  SetName(TekNum, TekName)               ' Записываем имя игрока
+  NumToStrRight(TekCount, 7, strCount)   ' выравниваем счет вправо
+  NumToStrRight(TekUroven, 2, strUroven) ' выравниваем уровень вправо
+  TableRec[2*TekNum] = TekDate + " - " + strCount + ":" + strUroven + "L" + TekParol
+EndFunction
+
+' --------------------------------------------------
+' распечатываем текущий заголовок таблицы рекордов
+Function PrintTableHead()
+  LCDRu.StopUpdate()
+  LCDRu.Clear()                           ' Все таки нужно очистить экран
+  LCDRu.TextRu(1, 0, 10, 1, NameTableRec) ' заголовок таблицы
+  LCDRu.Rect(1, 0, 5, 176, 18)            ' двойная рамка вокруг заголовка
+  LCDRu.Rect(1, 3, 7, 170, 14)            '
+  LCDRu.Update()                          '
+EndFunction
+
+' --------------------------------------------------
+' распечатываем текущую страницу таблицы рекордов
+' Число строк в отображаемой странице не должно быть больше 5. Скролинг таблицы осуществляется по значению текущей строки
+'  
+Function PrintTable(in number numIn, in number prizDraw)
+  LCDRu.StopUpdate()
+  GetIndexTek(numIn, priz)                                      ' Вычисляем номер строки в первой строке экрана
+  If priz = 1 Or prizDraw = 1 Then                              ' надо распечатывать строки (1) или надо просто переставить курсор (0)
+    For I = 1 To 5                                              ' Распечатываем строки таблицы
+      If I + TekStart < TekLen + 3 Then                         ' Строки таблицы с реальными рекордами - выводим
+        GetNum(I + TekStart - 1, numStr)                        ' номер строки в текстовый вид с ")"                   
+        LCD.Text(1, 24, I*20+4,  1, "                    ")     ' очищаем строку с предыдущим именем (оно может быть длинее выводимого)
+        LCDRu.TextRu(1, 0,  I*20+4,  1, numStr)                 ' выводим номер рекоррда = номер строки в таблице рекордов
+        LCDRu.TextRu(1, 24, I*20+4,  1, TableRec[2*(I+TekStart-1)-1])' затем выводим имя из строки таблицы
+        LCDRu.Text(1, 0,  I*20+14, 1, TableRec[2*(I+TekStart-1)])    ' затем дату, очки и уровень на следующей строке
+        If TekNum = I + TekStart - 1 Then                       ' текущая строка - это строка текущего игрока?       
+          LCD.FillRect(1, 17,  I*20+4,  4, 15)                  ' для текущего игрока ставим отметку - курсор высотой в две строки
+        EndIf  
+      Else  
+        LCD.Text(1, 0, I*20+4,  1, "                      ")    ' очищаем строку
+        LCD.Text(1, 0, I*20+14, 1, "                      ")    ' таблицы
+      EndIf                                                     '
+    EndFor                                                      '
+  EndIf                                                         '   
+  LCDRu.Update()                                                ' одновременный вывод сформированного буфера на экран
+  SetFrame(numIn)                                               ' Выводим рамку вокруг текущая выбранная строки
+  'LCDRu.TextRu(1, 0, 10, 1, numIn + "!" + num  + "!"  + TekNum + "!" + TekLen + "!" + TekParol)
+EndFunction
+
+' --------------------------------------------------
+' Вычисляем индекс (номер строки таблицы) выводимый в первой строке очередной порции таблицы рекордов из 5 строк
+' в скроллинге таблицы рекордов для отображения на экране EV3. Номер текущей строки задан в numIn
+' Устанавливаем признак скроллинга = 1, если надо переместить строки вверх или вниз. Иначе просто переставляем рамку
+' При скроллинге также изменяем глобальную переменную TekStart - номер строки отображаемой вверху первой на странице
+Function GetIndexTek(in number numIn, out number prizDraw)
+  If     numIn = TekStart - 1 Then        ' Если текущая строка при последовательном скроллинге вышла за верхную границу текущей страницы
+         TekStart = TekStart - 1          ' то уменьшаем номер верхней отображаемой строки (курсор останеться на верхней 1 строке)
+         prizDraw = 1                     ' то делаем скроллинг страницы вниз
+  ElseIf numIn >= TekStart And numIn < TekStart + 5 Then        ' текущая строка находится внутри страницы
+         prizDraw = 0                     ' перерисовки страницы (скроллинг_ )не делаем - просто переставляем рамку курсора
+  ElseIf numIn = TekStart + 5 Then        ' Если текущая строка при последовательном скроллинге вышла за нижную границу текущей страницы 
+         TekStart = TekStart + 1          ' Увеличили номер верхней отображаемой строки (курсор останеться на последней 5 строке)
+         prizDraw = 1                     ' то делаем скроллинг страницы вниз
+  Else                                    ' Первый вывод текущей страницы таблицы (то есть нет последовательного скроллинга)
+         prizDraw = 1                     ' Строки следует распечатать, так как это первая отображаемая страница
+         If numIn < 4 Then                ' Для первых 3 строк страницы   
+            TekStart = 1                  ' курсор ставим на текущей строке, а страницу отображаем с 1 строки
+         Else                             ' Для всех остальных строк 
+            TekStart = numIn - 2          ' Страницу начинает с такой строки, чтобы курсор, стоящий на текущей строке, был на 3 строке страницы (посредине) 
+         EndIf   
+  EndIf   
+EndFunction
+
+' --------------------------------------------------
+' Получить в numOut номер строки таблицы рекордов в виде "n) " или "nn)", по номеру заданному в numIn
+Function GetNum(in number numIn, out string numOut)
+  If numIn <= 9 Then
+    numOut = "" + numIn + ") "
+  Else
+    numOut = "" + numIn + ")"
+  EndIf
+EndFunction
+
+' --------------------------------------------------
+' Задать рамку вокруг текущей строки таблицы рекордов. Номер строки в numIn
+Function SetFrame(in number numIn)
+  GetPosTek(numIn, pos)  
+  If pos > 0 Then                           ' на всякий случай, вдруг как то текущая строка вышла за пределы страницы  
+    LCDRu.Rect(1, 0, pos*20+3, 175, 20)     ' Задаем одиночную рамку вокруг текущей строки таблицы рекордов
+    If TekNum = numIn Then
+      LCDRu.Rect(1, 1, pos*20+4, 174, 18)   ' Задаем двойную рамку вокруг строки текущего игрока таблицы рекордов
+    EndIf
+  EndIf  
+EndFunction
+
+' --------------------------------------------------
+' Убрать рамку вокруг текущей строки таблицы рекордов. Номер строки в numIn
+Function ClearFrame(in number numIn)
+  GetPosTek(numIn, pos)
+  If pos > 0 Then                                               ' на всякий случай, вдруг как то текущая строка вышла за пределы страницы  
+    LCDRu.Rect(0, 0, pos*20+3, 175, 20)                         ' Убираем одиночнцю рамку вокруг текущей строки таблицы рекордов
+    If TekNum = numIn Then                                      ' Для текущего игрока
+      LCDRu.Rect(0, 1, pos*20+4, 174, 18)                       ' Убираем двойную рамку вокруг строки текущего игрока таблицы рекордов
+      ' и перерисовываем строку текущего игрока, так как внутренняя рамка ее подпортила сверху и снизу
+      GetNum(numIn, numStr)                                     ' номер строки в текстовый вид с ")"                   
+      LCDRu.TextRu(1, 0,  pos*20+4,  1, numStr)                 ' перевыводим номер рекорда = номер строки в таблице рекордов
+      LCDRu.TextRu(1, 24, pos*20+4,  1, TableRec[2*(numIn)-1])  ' перевыводим имя из строки таблицы
+      LCD.Text(1, 0,  pos*20+14, 1, TableRec[2*numIn])          ' затем дату, очки и уровень на следующей строке
+      LCD.FillRect(1, 17,  pos*20+4,  4, 15)                      ' для текущего игрока ставим отметку - курсор высотой в две строки
+    EndIf
+  EndIf  
+EndFunction
+
+' --------------------------------------------------
+' Вычисляем позицию текущей строки в скроллинге таблицы рекордов на экране EV3. Номер текущей строки задан в numIn 
+' в начале таблицы для первых 5 строк - = numIn, далее 5 строка, пока меньше 95
+' в последнем участке (numIn > 94) - = numIn - 94   
+Function GetPosTek(in number numIn, out number posOut)
+  If numIn >= TekStart And numIn < TekStart + 5 Then       ' Текущая строка должна попадать в текущую отображаемую страницу
+    posOut = numIn - TekStart + 1                          ' Вычисляем номер строки курсора в текущей странице
+  Else                                                     ' вообще то так быть не должно (текущая строка всегда должна быть в текущей странице),
+    posOut = 0                                             ' но на всякий случай задаем признак - не рисовать рамку вокруг текушей строки
+  EndIf   
 EndFunction
 
 ' --------------------------------------------------
